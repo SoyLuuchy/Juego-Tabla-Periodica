@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Juego de la Tabla Periódica</title>
   <style>
     * {
@@ -151,6 +152,23 @@
       color: rgba(255, 255, 255, 0.7);
       font-size: 30px;
       font-style: italic;
+    }
+
+    /* Media queries para móviles */
+    @media (max-width: 600px) {
+      /* Ajusta la cuadrícula para que se vea bien en dispositivos pequeños */
+      #periodicTable {
+        grid-template-columns: repeat(6, 1fr);
+      }
+      /* Aumenta el tamaño de los botones e inputs para facilitar la interacción táctil */
+      button, input[type="text"] {
+        font-size: 18px;
+        padding: 12px 20px;
+      }
+      /* Ajusta los márgenes y paddings generales */
+      body {
+        padding: 10px;
+      }
     }
   </style>
 </head>
