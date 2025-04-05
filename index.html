@@ -13,6 +13,7 @@
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(to right, #74ABE2, #5563DE);
+      background-size: cover;
       color: #333;
       display: flex;
       flex-direction: column;
@@ -156,21 +157,58 @@
 
     /* Media queries para móviles */
     @media (max-width: 600px) {
-      /* Ajusta la cuadrícula para que se vea bien en dispositivos pequeños */
+      /* Ajusta la cuadrícula para móviles */
       #periodicTable {
         grid-template-columns: repeat(6, 1fr);
       }
-      /* Aumenta el tamaño de los botones e inputs para facilitar la interacción táctil */
+      /* Botones e inputs más grandes para toque */
       button, input[type="text"] {
         font-size: 18px;
         padding: 12px 20px;
       }
-      /* Ajusta los márgenes y paddings generales */
+      /* Menos padding en el body y mejor fondo */
       body {
         padding: 10px;
+        background: linear-gradient(to bottom, #74ABE2, #5563DE);
+        background-size: cover;
+      }
+      /* Créditos en posición estática y con menor tamaño */
+      .credits {
+        position: static;
+        font-size: 16px;
+        margin-top: 15px;
+        text-align: center;
       }
     }
   </style>
+</head>
+<body>
+  <h1>Juego de la Tabla Periódica</h1>
+  <div class="credits">Hecho por luuchy.perzz (Lucas Pérez)</div>
+  
+  <div id="periodicTable"></div>
+  
+  <div id="menu">
+    <p>Selecciona un modo de juego:</p>
+    <button onclick="iniciarJuego(1)">1. Nombre con símbolo</button>
+    <button onclick="iniciarJuego(2)">2. Símbolo con nombre</button>
+    <button onclick="iniciarJuego(3)">3. Valencia con símbolo/nombre</button>
+  </div>
+
+  <div id="game" style="display:none;">
+    <div id="score">Puntuación: 0</div>
+    <div id="question"></div>
+    <input type="text" id="answer" placeholder="Tu respuesta (presiona Enter)">
+    <br>
+    <button onclick="verificarRespuesta()">Enviar</button>
+    <div id="notification"></div>
+  </div>
+
+  <div id="result" style="display:none;">
+    <h2>¡Juego Finalizado!</h2>
+    <p id="finalScore"></p>
+    <button onclick="reiniciar()">Reiniciar</button>
+  </div>
 </head>
 <body>
   <h1>Juego de la Tabla Periódica</h1>
