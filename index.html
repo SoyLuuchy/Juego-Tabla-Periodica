@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Juego de la Tabla Periódica</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #74ABE2, #5563DE);
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      min-height: 100vh;
+      position: relative;
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #fff;
+      text-shadow: 1px 1px 2px #000;
+    }
+    #menu, #game, #result {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      padding: 20px;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 500px;
+      animation: fadeIn 0.8s ease-in-out;
+    }
+    button {
+      background: #5563DE;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #3b45b0;
+    }
+    input[type="text"] {
+      width: 80%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      transition: border 0.3s ease;
+    }
+    input[type="text"]:focus {
+      border-color: #5563DE;
+      outline: none;
+    }
+    #score, #timer {
+      font-size: 18px;
+      margin: 10px 0;
+      font-weight: bold;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #periodicTable {
+      display: grid;
+      grid-template-columns: repeat(18, 1fr);
+      gap: 2px;
+      width: 100%;
+      max-width: 1200px;
+      margin-bottom: 20px;
+      animation: fadeIn 1s ease-in-out;
+    }
+    .elementCell {
+      background: #f7f7f7;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 5px;
+      text-align: center;
+      min-height: 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      transition: background 0.4s ease, transform 0.4s ease;
+      font-size: 12px;
+    }
+    .period-gap {
+      grid-column: 3 / 13;
+      border: none !important;
+      background: transparent !important;
+    }
+    .elementCell.correct {
+      background: #90ee90;
+      border-color: #080;
+      animation: pulse 0.5s ease-in-out;
+    }
+    .elementCell.incorrect {
+      background: #ffcccb;
+      border-color: #a00;
+      animation: shake 0.5s ease-in-out;
+    }
+    .elementCell.current {
+      background: #ffeb3b !important;
+      border-color: #ffc107 !important;
+      box-shadow: 0 0 8px #ffeb3b;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+      100% { transform: translateX(0); }
+    }
+    .elementSymbol {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+    .elementName {
+      font-size: 12px;
+      color: #555;
+    }
+    .elementValence {
+      font-size: 10px;
+      color: #333;
+    }
+    #notification {
+      margin-top: 15px;
+      font-size: 16px;
+      min-height: 24px;
+      transition: opacity 0.4s ease;
+    }
+    .credits {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 30px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <h1>Juego de la Tabla Periódica</h1>
+  <div class="credits">Hecho por luuchy.perzz (Lucas Pérez)</div>
+  
+  <div id="periodicTable"></div>
+  
+  <div id="menu">
+    <p>Selecciona un modo de juego:</p>
+    <button onclick="iniciarJuego(1)">1. Nombre con símbolo</button>
+    <button onclick="iniciarJuego(2)">2. Símbolo con nombre</button>
+    <button onclick="iniciarJuego(3)">3. Valencia con símbolo/nombre</button>
+  </div>
+
+  <div id="game" style="display:none;">
+    <div id="score">Puntuación: 0</div>
+    <div id="question"></div>
+    <input type="text" id="answer" placeholder="Tu respuesta (presiona Enter)">
+    <br>
+    <button onclick="verificarRespuesta()">Enviar</button>
+    <div id="notification"></div>
+  </div>
+
+  <div id="result" style="display:none;">
+    <h2>¡Juego Finalizado!</h2>
+    <p id="finalScore"></p>
+    <button onclick="reiniciar()">Reiniciar</button>
+  </div>
+
+  <script>
+    const elementos = [
+      { nombre: "Hidrógeno", simbolo: "H", valencias: ["1"], period: 1, group: 1 },
+      { nombre: "Helio", simbolo: "He", valencias: ["0"], period: 1, group: 18 },
+      { nombre: "Litio", simbolo: "Li", valencias: ["1"], period: 2, group: 1 },
+      { nombre: "Berilio", simbolo: "Be", valencias: ["2"], period: 2, group: 2 },
+      { nombre: "Boro", simbolo: "B", valencias: ["3"], period: 2, group: 13 },
+      { nombre: "Carbono", simbolo: "C", valencias: ["4", "2"], period: 2, group: 14 },
+      { nombre: "Nitrogeno", simbolo: "N", valencias: ["1","2","3","4","5"], period: 2, group: 15 },
+      { nombre: "Oxigeno", simbolo: "O", valencias: ["2"], period: 2, group: 16 },
+      { nombre: "Fluor", simbolo: "F", valencias: ["1"], period: 2, group: 17 },
+      { nombre: "Neon", simbolo: "Ne", valencias: ["0"], period: 2, group: 18 },
+      { nombre: "Sodio", simbolo: "Na", valencias: ["1"], period: 3, group: 1 },
+      { nombre: "Magnesio", simbolo: "Mg", valencias: ["2"], period: 3, group: 2 },
+      { nombre: "Aluminio", simbolo: "Al", valencias: ["3"], period: 3, group: 13 },
+      { nombre: "Silicio", simbolo: "Si", valencias: ["4"], period: 3, group: 14 },
+      { nombre: "Fosforo", simbolo: "P", valencias: ["3","5"], period: 3, group: 15 },
+      { nombre: "Azufre", simbolo: "S", valencias: ["2","4","6"], period: 3, group: 16 },
+      { nombre: "Cloro", simbolo: "Cl", valencias: ["1","3","5","7"], period: 3, group: 17 },
+      { nombre: "Argon", simbolo: "Ar", valencias: ["0"], period: 3, group: 18 },
+      { nombre: "Potasio", simbolo: "K", valencias: ["1"], period: 4, group: 1 },
+      { nombre: "Calcio", simbolo: "Ca", valencias: ["2"], period: 4, group: 2 },
+      { nombre: "Titanio", simbolo: "Ti", valencias: ["3","4"], period: 4, group: 4 },
+      { nombre: "Cromo", simbolo: "Cr", valencias: ["2","3","6"], period: 4, group: 6 },
+      { nombre: "Manganeso", simbolo: "Mn", valencias: ["2","3","4","6","7"], period: 4, group: 7 },
+      { nombre: "Hierro", simbolo: "Fe", valencias: ["2","3"], period: 4, group: 8 },
+      { nombre: "Cobalto", simbolo: "Co", valencias: ["2","3"], period: 4, group: 9 },
+      { nombre: "Niquel", simbolo: "Ni", valencias: ["2","3"], period: 4, group: 10 },
+      { nombre: "Cobre", simbolo: "Cu", valencias: ["1","2"], period: 4, group: 11 },
+      { nombre: "Cinc", simbolo: "Zn", valencias: ["2"], period: 4, group: 12 },
+      { nombre: "Galio", simbolo: "Ga", valencias: ["3"], period: 4, group: 13 },
+      { nombre: "Germanio", simbolo: "Ge", valencias: ["2","4"], period: 4, group: 14 },
+      { nombre: "Arsenico", simbolo: "As", valencias: ["3","5"], period: 4, group: 15 },
+      { nombre: "Selenio", simbolo: "Se", valencias: ["2","4","6"], period: 4, group: 16 },
+      { nombre: "Bromo", simbolo: "Br", valencias: ["1","5"], period: 4, group: 17 },
+      { nombre: "Kripton", simbolo: "Kr", valencias: ["0"], period: 4, group: 18 },
+      { nombre: "Rubidio", simbolo: "Rb", valencias: ["1"], period: 5, group: 1 },
+      { nombre: "Estroncio", simbolo: "Sr", valencias: ["2"], period: 5, group: 2 },
+      { nombre: "Paladio", simbolo: "Pd", valencias: ["2","4"], period: 5, group: 10 },
+      { nombre: "Plata", simbolo: "Ag", valencias: ["1"], period: 5, group: 11 },
+      { nombre: "Cadmio", simbolo: "Cd", valencias: ["2"], period: 5, group: 12 },
+      { nombre: "Indio", simbolo: "In", valencias: ["3"], period: 5, group: 13 },
+      { nombre: "Estaño", simbolo: "Sn", valencias: ["2","4"], period: 5, group: 14 },
+      { nombre: "Antimonio", simbolo: "Sb", valencias: ["3","5"], period: 5, group: 15 },
+      { nombre: "Tellurio", simbolo: "Te", valencias: ["2","4","6"], period: 5, group: 16 },
+      { nombre: "Yodo", simbolo: "I", valencias: ["1","5","7"], period: 5, group: 17 },
+      { nombre: "Xenon", simbolo: "Xe", valencias: ["0"], period: 5, group: 18 },
+      { nombre: "Cesio", simbolo: "Cs", valencias: ["1"], period: 6, group: 1 },
+      { nombre: "Bario", simbolo: "Ba", valencias: ["2"], period: 6, group: 2 },
+      { nombre: "Platino", simbolo: "Pt", valencias: ["2","4"], period: 6, group: 10 },
+      { nombre: "Oro", simbolo: "Au", valencias: ["1","3"], period: 6, group: 11 },
+      { nombre: "Mercurio", simbolo: "Hg", valencias: ["1","2"], period: 6, group: 12 },
+      { nombre: "Radon", simbolo: "Rn", valencias: ["0"], period: 6, group: 18 },
+      { nombre: "Francio", simbolo: "Fr", valencias: ["1"], period: 7, group: 1 },
+      { nombre: "Radio", simbolo: "Ra", valencias: ["2"], period: 7, group: 2 }
+    ];
+
+    let modoJuego = 0;
+    let score = 0;
+    let elementoActual;
+    let intentos = 0;
+    let elementosDisponibles = [];
+
+    document.getElementById('answer').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') verificarRespuesta();
+    });
+
+    function normalizar(str) {
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
+
+    function parseValencias(input) {
+      return input.split(/[\s,;]+/).filter(x => x.length > 0).map(x => normalizar(x));
+    }
+
+    function compararArreglos(arr1, arr2) {
+      return arr1.length === arr2.length && 
+             arr1.slice().sort().every((v, i) => v === arr2.slice().sort()[i]);
+    }
+
+    function generarTablaPeriodica() {
+      const tabla = document.getElementById("periodicTable");
+      tabla.innerHTML = "";
+      tabla.style.gridTemplateColumns = "repeat(18, 1fr)";
+
+      elementos.forEach(elem => {
+        const cell = document.createElement("div");
+        cell.classList.add("elementCell");
+        cell.id = `element-${elem.simbolo}`;
+        cell.style.gridRow = elem.period;
+        cell.style.gridColumn = elem.group;
+
+        if (modoJuego === 1) {
+          cell.innerHTML = `<span class="elementSymbol">${elem.simbolo}</span>`;
+        } else if (modoJuego === 2) {
+          cell.innerHTML = `<span class="elementName">${elem.nombre}</span>`;
+        } else {
+          cell.innerHTML = `<span class="elementSymbol">${elem.simbolo}</span>
+                            <span class="elementName">${elem.nombre}</span>`;
+        }
+        tabla.appendChild(cell);
+      });
+
+      for (let p = 4; p <= 7; p++) {
+        const gap = document.createElement("div");
+        gap.classList.add("period-gap");
+        gap.style.gridRow = p;
+        gap.style.gridColumn = "3 / 13";
+        tabla.appendChild(gap);
+      }
+    }
+
+    function iniciarJuego(modo) {
+      modoJuego = modo;
+      score = 0;
+      document.getElementById("score").innerText = "Puntuación: " + score;
+      document.getElementById("menu").style.display = "none";
+      document.getElementById("result").style.display = "none";
+      document.getElementById("game").style.display = "block";
+      document.getElementById("answer").value = "";
+      document.getElementById("notification").innerText = "";
+      elementosDisponibles = [...elementos];
+      generarTablaPeriodica();
+      nuevaPregunta();
+    }
+
+    function revelarRespuesta(elem) {
+      const cell = document.getElementById("element-" + elem.simbolo);
+      if (!cell) return;
+      if (modoJuego === 1) {
+        cell.innerHTML = `<span class="elementSymbol">${elem.simbolo}</span>
+                          <span class="elementName">${elem.nombre}</span>`;
+      } else if (modoJuego === 2) {
+        cell.innerHTML = `<span class="elementName">${elem.nombre}</span>
+                          <span class="elementSymbol">${elem.simbolo}</span>`;
+      } else if (modoJuego === 3) {
+        cell.innerHTML = `<span class="elementSymbol">${elem.simbolo}</span>
+                          <span class="elementName">${elem.nombre}</span>
+                          <span class="elementValence">Valencias: ${elem.valencias.join(", ")}</span>`;
+      }
+    }
+
+    function nuevaPregunta() {
+      intentos = 0;
+      document.getElementById("answer").value = "";
+      document.querySelectorAll('.elementCell').forEach(cell => cell.classList.remove('current'));
+      document.getElementById("notification").innerText = "";
+
+      if (elementosDisponibles.length === 0) {
+        finalizarJuego();
+        return;
+      }
+
+      const indice = Math.floor(Math.random() * elementosDisponibles.length);
+      elementoActual = elementosDisponibles[indice];
+      const currentCell = document.getElementById(`element-${elementoActual.simbolo}`);
+      if (currentCell) currentCell.classList.add('current');
+
+      let preguntaTexto = "";
+      if (modoJuego === 1) {
+        preguntaTexto = `¿Cuál es el <strong>nombre</strong> del elemento con el símbolo: <strong>${elementoActual.simbolo}</strong>?`;
+      } else if (modoJuego === 2) {
+        preguntaTexto = `¿Cuál es el <strong>símbolo</strong> del elemento: <strong>${elementoActual.nombre}</strong>?`;
+      } else if (modoJuego === 3) {
+        preguntaTexto = `¿Cuáles son las <strong>valencias</strong> del elemento <strong>${elementoActual.nombre} (${elementoActual.simbolo})</strong>? Escribe todas, separadas por comas o espacios.`;
+      }
+      document.getElementById("question").innerHTML = preguntaTexto;
+      document.getElementById("answer").focus();
+    }
+
+    function verificarRespuesta() {
+      const notification = document.getElementById("notification");
+      const input = document.getElementById("answer").value.trim();
+
+      if (modoJuego === 3) {
+        const respuestaCorrecta = elementoActual.valencias.map(v => normalizar(v));
+        const respuestaUsuario = parseValencias(input);
+        if (compararArreglos(respuestaUsuario, respuestaCorrecta)) {
+          manejarRespuestaCorrecta();
+          return;
+        }
+      } else {
+        let respuestaCorrecta = modoJuego === 1 ? normalizar(elementoActual.nombre) : normalizar(elementoActual.simbolo);
+        if (normalizar(input) === respuestaCorrecta) {
+          manejarRespuestaCorrecta();
+          return;
+        }
+      }
+
+      intentos++;
+      if (intentos < 3) {
+        notification.style.color = "#d00";
+        notification.innerText = `Incorrecto. Te quedan ${3 - intentos} intento(s).`;
+        document.getElementById("answer").value = "";
+      } else {
+        manejarIntentoFallido();
+      }
+    }
+
+    function manejarRespuestaCorrecta() {
+      const notification = document.getElementById("notification");
+      const puntos = [10, 5, 1][intentos] || 0;
+      score += puntos;
+      
+      notification.style.color = "#080";
+      notification.innerText = `¡Correcto! +${puntos} puntos.`;
+      
+      const cell = document.getElementById("element-" + elementoActual.simbolo);
+      if (cell) {
+        cell.classList.add("correct");
+        revelarRespuesta(elementoActual);
+      }
+      
+      eliminarElementoActual();
+      setTimeout(nuevaPregunta, 800);
+      document.getElementById("score").innerText = "Puntuación: " + score;
+    }
+
+    function manejarIntentoFallido() {
+      const notification = document.getElementById("notification");
+      notification.style.color = "#d00";
+      
+      if (modoJuego === 3) {
+        notification.innerText = `Incorrecto. Las valencias correctas son: ${elementoActual.valencias.join(", ")}`;
+      } else {
+        notification.innerText = `Incorrecto. La respuesta correcta es: ${modoJuego === 1 ? elementoActual.nombre : elementoActual.simbolo}`;
+      }
+
+      const cell = document.getElementById("element-" + elementoActual.simbolo);
+      if (cell) {
+        cell.classList.add("incorrect");
+        revelarRespuesta(elementoActual);
+      }
+      
+      eliminarElementoActual();
+      setTimeout(nuevaPregunta, 1500);
+      document.getElementById("answer").value = "";
+    }
+
+    function eliminarElementoActual() {
+      elementosDisponibles = elementosDisponibles.filter(e => e.simbolo !== elementoActual.simbolo);
+    }
+
+    function finalizarJuego() {
+      document.getElementById("finalScore").innerText = `Puntuación final: ${score}`;
+      document.getElementById("game").style.display = "none";
+      document.getElementById("result").style.display = "block";
+    }
+
+    function reiniciar() {
+      generarTablaPeriodica();
+      document.getElementById("menu").style.display = "block";
+      document.getElementById("result").style.display = "none";
+    }
+
+    window.onload = generarTablaPeriodica;
+  </script>
+</body>
+</html>
