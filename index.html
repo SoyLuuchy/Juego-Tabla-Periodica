@@ -423,6 +423,78 @@
       margin-top: 10px;
     }
 
+    #errorReview {
+      margin-top: 20px;
+      text-align: left;
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 10px;
+    }
+
+    .error-item {
+      margin-bottom: 10px;
+      padding: 10px;
+      border-left: 4px solid #eb3349;
+      background: white;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .error-item .wrong {
+      color: #eb3349;
+      text-decoration: line-through;
+      margin-right: 10px;
+    }
+
+    .error-item .correct-ans {
+      color: #11998e;
+      font-weight: bold;
+    }
+
+    #resultsTableContainer {
+      margin-top: 20px;
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .res-cell {
+      font-size: 10px;
+      padding: 2px;
+      border: 1px solid #ccc;
+      border-radius: 2px;
+      text-align: center;
+      min-height: 35px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+
+    .res-3pt {
+      background: #004d00;
+    }
+
+    /* Verde oscuro */
+    .res-2pt {
+      background: #008000;
+    }
+
+    /* Verde medio */
+    .res-1pt {
+      background: #b3cc00;
+      color: #333;
+    }
+
+    /* Verde-Amarillo */
+    .res-0pt {
+      background: #eb3349;
+    }
+
+    /* Rojo (fallado) */
+
     /* Media queries para móviles */
     @media (max-width: 600px) {
       #periodicTable {
@@ -489,6 +561,8 @@
       <div class="score-fraction" id="scoreFraction"></div>
       <div style="font-size: 0.5em; margin-top: 10px;" id="timeDisplay"></div>
     </div>
+    <div id="errorReview"></div>
+    <div id="resultsTableContainer"></div>
     <button onclick="reiniciar()">🔄 Volver al Menú</button>
   </div>
 
@@ -559,6 +633,8 @@
     let segundos = 0;
     let totalElementos = 0;
     let heartbeatInterval;
+    let errores = [];
+    let aciertosDetallados = {}; // {simbolo: puntos}
 
     // Sistema de Audio
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -813,8 +889,10 @@
     function manejarRespuestaCorrecta() {
       playSound('correct');
       const notification = document.getElementById("notification");
-      const puntos = [10, 5, 1][intentos] || 0;
+      const puntos = [3, 2, 1][intentos] || 0;
       score += puntos;
+
+      aciertosDetallados[elementoActual.simbolo] = puntos;
 
       notification.style.color = "#080";
       notification.style.background = "rgba(200, 255, 200, 0.3)";
@@ -845,11 +923,23 @@
         }, 1500);
       }
 
+      let respuestaCorrecta = "";
       if (modoJuego === 3) {
-        notification.innerText = `❌ Incorrecto. Las valencias correctas son: ${elementoActual.valencias.join(", ")}`;
+        respuestaCorrecta = elementoActual.valencias.join(", ");
+        notification.innerText = `❌ Incorrecto. Las valencias correctas son: ${respuestaCorrecta}`;
       } else {
-        notification.innerText = `❌ Incorrecto. La respuesta correcta es: ${modoJuego === 1 ? elementoActual.nombre : elementoActual.simbolo}`;
+        respuestaCorrecta = modoJuego === 1 ? elementoActual.nombre : elementoActual.simbolo;
+        notification.innerText = `❌ Incorrecto. La respuesta correcta es: ${respuestaCorrecta}`;
       }
+
+      errores.push({
+        nombre: elementoActual.nombre,
+        simbolo: elementoActual.simbolo,
+        usuario: document.getElementById("answer").value.trim(),
+        correcta: respuestaCorrecta
+      });
+
+      aciertosDetallados[elementoActual.simbolo] = 0;
 
       const cell = document.getElementById("element-" + elementoActual.simbolo);
       if (cell) {
@@ -868,24 +958,85 @@
 
     function finalizarJuego() {
       stopTimer();
-      const maxScore = totalElementos * 10;
+      stopHeartbeat();
+      const maxScore = totalElementos * 3;
       const percentage = Math.round((score / maxScore) * 100);
 
       document.getElementById("finalScore").innerText = `${score} puntos`;
       document.getElementById("scoreFraction").innerText = `${score} / ${maxScore} (${percentage}%)`;
       document.getElementById("timeDisplay").innerText = `⏱️ Tiempo total: ${segundos}s`;
+
+      // Mostrar revisión de errores
+      const reviewDiv = document.getElementById("errorReview");
+      reviewDiv.innerHTML = errores.length > 0 ? "<h3>Revisión de Errores:</h3>" : "<h3>¡Perfecto! Sin errores.</h3>";
+      errores.forEach(err => {
+        const item = document.createElement("div");
+        item.classList.add("error-item");
+        item.innerHTML = `<strong>${err.nombre} (${err.simbolo}):</strong> <span class="wrong">${err.usuario || "(vacío)"}</span> <span class="correct-ans">${err.correcta}</span>`;
+        reviewDiv.appendChild(item);
+      });
+
+      // Si es modo hardcore, mostrar tabla de resultados
+      const tableContainer = document.getElementById("resultsTableContainer");
+      if (modoHardcore) {
+        tableContainer.innerHTML = "<h3>Mapa de Aciertos:</h3>";
+        generarTablaResultados();
+      } else {
+        tableContainer.innerHTML = "";
+      }
+
       document.getElementById("game").style.display = "none";
       document.getElementById("result").style.display = "block";
     }
 
+    function generarTablaResultados() {
+      const container = document.getElementById("resultsTableContainer");
+      const tableDiv = document.createElement("div");
+      tableDiv.style.display = "grid";
+      tableDiv.style.gridTemplateColumns = "repeat(18, 1fr)";
+      tableDiv.style.gap = "2px";
+
+      elementos.forEach(elem => {
+        const cell = document.createElement("div");
+        cell.classList.add("res-cell");
+        cell.style.gridRow = elem.period;
+        cell.style.gridColumn = elem.group;
+
+        const puntos = aciertosDetallados[elem.simbolo];
+        if (puntos === 3) cell.classList.add("res-3pt");
+        else if (puntos === 2) cell.classList.add("res-2pt");
+        else if (puntos === 1) cell.classList.add("res-1pt");
+        else if (puntos === 0) cell.classList.add("res-0pt");
+        else cell.style.background = "#eee"; // No preguntado (raro pero por si acaso)
+
+        cell.innerText = elem.simbolo;
+        tableDiv.appendChild(cell);
+      });
+
+      // Gaps
+      for (let p = 4; p <= 7; p++) {
+        const gap = document.createElement("div");
+        gap.classList.add("period-gap");
+        gap.style.gridRow = p;
+        gap.style.gridColumn = "3 / 13";
+        tableDiv.appendChild(gap);
+      }
+
+      container.appendChild(tableDiv);
+    }
+
     function reiniciar() {
       stopTimer();
+      stopHeartbeat();
       document.body.classList.remove("hardcore");
+      document.body.classList.remove("shake");
       document.getElementById("periodicTable").style.display = "grid";
       generarTablaPeriodica();
       document.getElementById("menu").style.display = "block";
       document.getElementById("result").style.display = "none";
       modoHardcore = false;
+      errores = [];
+      aciertosDetallados = {};
     }
 
     window.onload = generarTablaPeriodica;
